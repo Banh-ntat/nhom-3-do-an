@@ -1,0 +1,28 @@
+{
+  "analysis_target": "is_severe = 1 khi Severity thuộc 3-4",
+  "selected_model": "Decision Tree balanced",
+  "selection_rule": "Average precision CV cao nhất trên train",
+  "binary_logistic_best_params": {
+    "model__C": 10.0
+  },
+  "binary_logistic_best_cv_average_precision": 0.2722882321648005,
+  "binary_tree_best_params": {
+    "model__max_depth": 12,
+    "model__min_samples_leaf": 100
+  },
+  "binary_tree_best_cv_average_precision": 0.35351887051339725,
+  "multiclass_selected_model": "Decision Tree balanced",
+  "multiclass_selection_rule": "F1-macro CV cao nhất trên train",
+  "multiclass_logistic_best_params": {
+    "model__C": 1.0
+  },
+  "multiclass_logistic_best_cv_f1_macro": 0.21231295712815595,
+  "multiclass_tree_best_params": {
+    "model__max_depth": 12,
+    "model__min_samples_leaf": 20
+  },
+  "multiclass_tree_best_cv_f1_macro": 0.25593230636913733,
+  "excluded_early_prediction_feature": "Distance(mi)",
+  "probability_calibration": "CalibratedClassifierCV, sigmoid, cv=5 trên train; nhãn cứng lấy từ model nhị phân được chọn",
+  "brier_severe_test": 0.12898594457433132
+}

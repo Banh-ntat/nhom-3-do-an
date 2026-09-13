@@ -1,0 +1,3 @@
+split,n_events,Severity_1,Severity_2,Severity_3,Severity_4,severe_3_4,severe_rate
+test,16000,104,13067,2688,141,2829,0.1768125
+train,64000,416,52267,10751,566,11317,0.176828125
