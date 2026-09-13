@@ -1,91 +1,118 @@
-# Mục 3. Tổng hợp liên kỹ thuật
+# 3. Tổng hợp liên kỹ thuật
 
-> Bản kỹ thuật cho báo cáo. Số liệu được sinh từ `phan-tich-tong-hop.ipynb` ngày 11/09/2026; không sửa số liệu bằng tay khi đưa sang báo cáo.
+> Bản nội dung kỹ thuật để đưa vào báo cáo. Các số liệu được sinh từ `phan-tich-tong-hop.ipynb`; không thay đổi số liệu bằng cách nhập tay.
 
-## 3.1. Câu hỏi và phạm vi phân tích
+## 3.1. Kết hợp các kỹ thuật quanh câu hỏi dẫn dắt
 
-Đồ án kết hợp phân lớp và luật kết hợp để trả lời ba câu hỏi:
+Đồ án kết hợp **luật kết hợp**, **mô hình phân lớp** và **thống kê kiểm định độ bền** trên cùng một tập gồm 16.000 sự cố test. Mỗi dòng được nối bằng `ID`; do đó kết quả các kỹ thuật cùng mô tả đúng một nhóm sự cố, thay vì chỉ được đặt cạnh nhau.
 
-1. Trong các sự cố được ghi nhận tại California và Texas, tổ hợp điều kiện nào đi cùng tỷ lệ `Severity` 3-4 cao hơn, và xu hướng có ổn định theo nguồn/bang không?
-2. Có thể nhận diện nhóm `Severity` 3-4 từ thông tin ban đầu đến mức nào, và mô hình bỏ sót hoặc cảnh báo nhầm bao nhiêu?
-3. Luật và mô hình đồng hướng, bổ sung hay cảnh báo giới hạn của nhau ở những nhóm nào?
+`Severity` trong bộ dữ liệu biểu thị mức ảnh hưởng của sự cố lên luồng giao thông, không biểu thị thương vong. Nhãn chung của phần tổng hợp là `is_severe = 1` khi `Severity` thuộc 3-4. Mọi kết luận chỉ áp dụng cho snapshot 80.000 sự cố gồm California và Texas.
 
-`Severity` của US Accidents đo mức ảnh hưởng lên luồng giao thông, không đo thương vong. Vì vậy `is_severe = 1` và item `MucDo_Nang` chỉ là tên kỹ thuật cho nhóm `Severity` 3-4. Mọi kết luận dưới đây giới hạn trong snapshot 80.000 dòng gồm California (59.903) và Texas (20.097).
+### 3.1.1. Thiết kế kết hợp và kiểm soát đánh giá
 
-## 3.2. Thiết kế đánh giá chung
+Nhóm tạo một split 80/20 duy nhất, stratify theo bốn lớp `Severity` và cố định `random_state=42`. Tập train có 64.000 sự cố; tập test có 16.000 sự cố. Tỷ lệ Severity 3-4 gần như không đổi giữa train (17,6828%) và test (17,6813%).
 
-Nguồn duy nhất là `accidents_preprocessed.csv` vì còn khóa `ID`. Tệp classification cũ đã impute trước split và tệp transaction cũ đã bỏ `ID`, nên chúng chỉ được dùng đối chiếu schema, không dùng làm kết quả đồ án.
+Mọi thao tác học từ dữ liệu, gồm imputation, scaling, calibration, lựa chọn mô hình, khai phá và chọn luật, chỉ sử dụng train. Test chỉ được dùng để đánh giá cuối và đối chiếu liên kỹ thuật. `Distance(mi)` bị loại vì mô tả chiều dài đoạn đường đã bị ảnh hưởng, không phù hợp với mục tiêu nhận diện sớm. Có 7.236 dòng thiếu thời gian được giữ là `Unknown`, không bị gán ngầm thành ngày thường.
 
-Nhóm tạo split 80/20 theo `ID`, stratify bốn lớp `Severity`, seed 42. Mọi bước học từ dữ liệu chỉ fit trên train; test dùng cho đánh giá cuối và đối chiếu hai kỹ thuật.
+Ba lớp bằng chứng được kết hợp như sau:
 
-| Split | Số sự kiện | Severity 1 | Severity 2 | Severity 3 | Severity 4 | Severity 3-4 |
-|---|---:|---:|---:|---:|---:|---:|
-| Train | 64.000 | 416 | 52.267 | 10.751 | 566 | 11.317 (17,6828%) |
-| Test | 16.000 | 104 | 13.067 | 2.688 | 141 | 2.829 (17,6813%) |
+| Lớp bằng chứng | Trả lời điều gì? | Đầu ra dùng để tổng hợp |
+|---|---|---|
+| Luật kết hợp | Tổ hợp điều kiện ngắn nào đồng xuất hiện với Severity 3-4? | Antecedent, coverage, confidence, lift |
+| Phân lớp nhị phân | Mỗi sự cố được đánh giá rủi ro ra sao và model sai ở đâu? | `risk_severe`, precision, recall, false negative/positive |
+| Thống kê và phân tầng | Chênh lệch có bền ngoài train và có bị nguồn/bang chi phối không? | Nhóm đối chứng, bootstrap CI 95%, audit Source/State/năm |
 
-`Distance(mi)` bị loại vì mô tả chiều dài đoạn đường đã bị ảnh hưởng và không phù hợp với mục tiêu nhận diện sớm. Snapshot có 7.236 dòng thiếu thời gian; các dòng này được giữ là `Unknown`, không gán ngầm thành ngày thường.
+### 3.1.2. Kết hợp kỹ thuật để trả lời Q1
 
-## 3.3. Lớp bằng chứng dự báo
+**Q1: Trong các sự cố được ghi nhận tại California và Texas, tổ hợp điều kiện nào liên hệ với tỷ lệ Severity 3-4 cao hơn, và xu hướng có nhất quán theo nguồn/bang không?**
 
-Mô hình chính dự báo trực tiếp `is_severe`, cùng biến đích nhị phân với consequent của luật. Dummy, Logistic Regression cân bằng và Decision Tree cân bằng được so sánh; mô hình được chọn bằng average precision qua 5-fold stratified CV trên train. Xác suất của cây được hiệu chỉnh sigmoid cũng chỉ bằng train.
+Luật kết hợp được dùng để phát hiện tổ hợp trên train. Mười antecedent cuối được khóa trước khi xem test. Khi áp dụng lên test, nhóm không chỉ tính confidence/lift mà còn so tỷ lệ Severity 3-4 với nhóm **không thỏa** antecedent, tính bootstrap CI 95%, đối chiếu score mô hình và kiểm tra từng tầng Source/State đủ mẫu.
 
-| Mô hình | AP CV | Accuracy | Balanced accuracy | Precision 3-4 | Recall 3-4 | F1 3-4 | F1-macro | AP test | ROC AUC |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Decision Tree balanced | 0,3535 | 0,6648 | 0,6689 | 0,3006 | 0,6752 | 0,4160 | 0,5905 | 0,3668 | 0,7312 |
-| Logistic Regression balanced | 0,2723 | 0,5676 | 0,6345 | 0,2526 | 0,7381 | 0,3764 | 0,5228 | 0,2794 | 0,6731 |
-| Dummy prior | - | 0,8232 | 0,5000 | 0,0000 | 0,0000 | 0,0000 | 0,4515 | 0,1768 | 0,5000 |
+Ba ví dụ có bằng chứng tương đối mạnh là:
 
-Decision Tree (`max_depth=12`, `min_samples_leaf=100`) được chọn vì AP CV cao nhất. Trên test, mô hình nhận diện đúng 1.910/2.829 mẫu `Severity` 3-4, bỏ sót 919 và tạo 4.444 cảnh báo nhầm. Recall 67,52% đi kèm precision chỉ 30,06%, nên mô hình chưa phù hợp để tự động ra quyết định. Brier score sau calibration là 0,1290.
+| Rule | Tổ hợp điều kiện | Số test | Tỷ lệ 3-4 trong nhóm | Nhóm không thỏa | Lift test | Risk model trong nhóm | Kết quả phân tầng |
+|---|---|---:|---:|---:|---:|---:|---|
+| R01 | Junction + nhiệt độ vừa | 662 | 25,83% | 17,33% | 1,461 | 23,05% | 3/3 tầng đủ mẫu cùng chiều |
+| R03 | Ban ngày + cuối tuần + nhiệt độ vừa | 755 | 26,49% | 17,25% | 1,498 | 20,01% | 4/4 tầng đủ mẫu cùng chiều |
+| R09 | Cuối tuần + nhiệt độ vừa | 1.134 | 25,49% | 17,09% | 1,441 | 19,94% | 4/4 tầng đủ mẫu cùng chiều |
 
-Phân lớp bốn mức được giữ làm nền kỹ thuật, không dùng làm score chính. Decision Tree bốn lớp đạt F1-macro 0,2558 và balanced accuracy 0,4143; kết quả này cho thấy tách chính xác từng mức vẫn khó hơn bài toán nhóm 1-2/3-4.
+Ví dụ R01 bao phủ 662 sự cố test, trong đó 171 sự cố thuộc Severity 3-4. Tỷ lệ 25,83% cao hơn 8,50 điểm phần trăm so với nhóm không thỏa R01; CI bootstrap 95% của chênh lệch là 5,33-11,72 điểm phần trăm. Score mô hình cũng cao hơn nhóm đối chứng 5,66 điểm phần trăm, với CI 95% là 4,74-6,46 điểm phần trăm. Vì vậy R01 có bằng chứng đồng hướng từ luật, model và kiểm tra thống kê trong phạm vi test.
 
-## 3.4. Lớp bằng chứng luật kết hợp
+Tuy nhiên, Q1 không được trả lời chỉ bằng kết quả mẫu gộp. R04 và R08 có lift test xấp xỉ 1,40 nhưng đảo chiều quan sát trong Source2. Hai luật này bị loại khỏi nhóm phát hiện chính. Kết luận Q1 ở giai đoạn hiện tại là: có tám luật ứng viên đồng hướng và ổn định trong các tầng chính đủ mẫu; chưa có căn cứ nói các điều kiện đó gây ra Severity cao.
 
-Transaction train gồm điều kiện thời gian, thời tiết, ánh sáng và hạ tầng; trạng thái thời gian thiếu được mã hóa `Unknown`. FP-Growth được thử với hai ngưỡng support trước khi khóa luật.
+### 3.1.3. Kết hợp kỹ thuật để trả lời Q2
 
-| Min-support | Frequent itemsets | Tổng luật | Luật hướng `MucDo_Nang` | Thời gian |
-|---:|---:|---:|---:|---:|
-| 1% | 1.242 | 5.298 | 55 | 166,57 giây |
-| 3% | 521 | 2.388 | 10 | 116,15 giây |
+**Q2: Có thể nhận diện nhóm Severity 3-4 từ thông tin ban đầu đến mức nào, và mô hình thường bỏ sót hoặc cảnh báo nhầm ở đâu?**
 
-Ngưỡng 1% được giữ để có đủ ứng viên. Luật cuối phải có consequent `MucDo_Nang`, confidence train tối thiểu 20%, lift train tối thiểu 1,2, antecedent không quá ba item, không chứa `Unknown`, không dư thừa và được chọn hoàn toàn trên train.
+Mô hình chính dự báo trực tiếp `is_severe`, cùng biến đích với consequent `MucDo_Nang` của luật. Decision Tree cân bằng được chọn bằng average precision qua 5-fold stratified CV trên train; test không tham gia lựa chọn.
 
-## 3.5. Đối chiếu trên cùng test set
+| Mô hình | AP test | Precision 3-4 | Recall 3-4 | F1 3-4 | Balanced accuracy |
+|---|---:|---:|---:|---:|---:|
+| Decision Tree balanced | 0,3668 | 30,06% | 67,52% | 41,60% | 66,89% |
+| Logistic Regression balanced | 0,2794 | 25,26% | 73,81% | 37,64% | 63,45% |
+| Dummy prior | 0,1768 | 0,00% | 0,00% | 0,00% | 50,00% |
 
-Antecedent đã khóa được áp lên test, rồi nối dự báo bằng `ID`. Tỷ lệ quan sát và score model của nhóm thỏa luật được so trực tiếp với nhóm không thỏa luật. Bootstrap 1.000 lần tạo khoảng tin cậy 95% cho chênh lệch.
+Decision Tree nhận diện đúng 1.910/2.829 sự cố Severity 3-4, bỏ sót 919 và tạo 4.444 cảnh báo nhầm. Recall 67,52% đi kèm precision chỉ 30,06%, nên model có thể tạo tín hiệu phân tích nhưng chưa đủ chất lượng để tự động ra quyết định.
 
-| Rule | Antecedent | Coverage | Tỷ lệ 3-4 | Nhóm còn lại | Lift | Risk model | Recall trong rule | Quan hệ |
+Luật kết hợp bổ sung góc nhìn về lỗi theo nhóm. Recall của model trong R03 là 62,00% và trong R09 là 65,05%, thấp hơn recall toàn test; trong khi recall trong R06 (`Junction + ngày thường`) là 73,98%. Chênh lệch này cho biết lỗi không phân bố hoàn toàn đồng đều theo các tổ hợp có thể diễn giải. Tuy nhiên, chưa nhóm nào đủ bằng chứng để gọi là “điểm mù chắc chắn”; kết luận cuối phải chờ phân tích false negative và Balanced Random Forest ở Mục 4.
+
+### 3.1.4. Kết hợp kỹ thuật để trả lời Q3
+
+**Q3: Luật và mô hình đồng hướng, bổ sung hoặc cảnh báo giới hạn của nhau ở những nhóm nào?**
+
+Với mỗi antecedent, nhóm nối các `ID` test tương ứng với dự báo, rồi so cả tỷ lệ quan sát và score mô hình với nhóm không thỏa luật. Bảng sau là đầu ra trung tâm của phần tổng hợp:
+
+| Rule | Antecedent | Coverage | Tỷ lệ 3-4 | Nhóm không thỏa | Lift | Risk model | Recall trong rule | Quan hệ |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| R01 | Junction + Nhiệt độ vừa | 4,14% | 25,83% | 17,33% | 1,461 | 23,05% | 73,68% | Đồng hướng, ổn định theo tầng |
-| R02 | Cuối tuần + Nhiều mây | 5,32% | 24,32% | 17,31% | 1,376 | 19,37% | 66,18% | Đồng hướng, ổn định theo tầng |
-| R03 | Ban ngày + Cuối tuần + Nhiệt độ vừa | 4,72% | 26,49% | 17,25% | 1,498 | 20,01% | 62,00% | Đồng hướng, ổn định theo tầng |
-| R04 | Buổi sáng + Nhiệt độ vừa + Nhiều mây | 4,99% | 24,69% | 17,31% | 1,396 | 22,62% | 77,16% | Đồng hướng mẫu gộp, không ổn định theo tầng |
-| R05 | Ban ngày + Junction + Ngày thường | 4,59% | 24,66% | 17,35% | 1,395 | 22,48% | 74,59% | Đồng hướng, ổn định theo tầng |
-| R06 | Junction + Ngày thường | 6,78% | 24,79% | 17,16% | 1,402 | 21,87% | 73,98% | Đồng hướng, ổn định theo tầng |
-| R07 | Trưa-chiều + Nhiệt độ vừa + Nhiều mây | 4,94% | 23,04% | 17,40% | 1,303 | 21,42% | 73,63% | Đồng hướng, ổn định theo tầng |
-| R08 | Ngày thường + Nhiệt độ vừa + Nhiều mây | 12,09% | 24,81% | 16,70% | 1,403 | 22,38% | 78,13% | Đồng hướng mẫu gộp, không ổn định theo tầng |
-| R09 | Cuối tuần + Nhiệt độ vừa | 7,09% | 25,49% | 17,09% | 1,441 | 19,94% | 65,05% | Đồng hướng, ổn định theo tầng |
+| R01 | Junction + nhiệt độ vừa | 4,14% | 25,83% | 17,33% | 1,461 | 23,05% | 73,68% | Đồng hướng, ổn định theo tầng |
+| R02 | Cuối tuần + nhiều mây | 5,32% | 24,32% | 17,31% | 1,376 | 19,37% | 66,18% | Đồng hướng, ổn định theo tầng |
+| R03 | Ban ngày + cuối tuần + nhiệt độ vừa | 4,72% | 26,49% | 17,25% | 1,498 | 20,01% | 62,00% | Đồng hướng, ổn định theo tầng |
+| R04 | Buổi sáng + nhiệt độ vừa + nhiều mây | 4,99% | 24,69% | 17,31% | 1,396 | 22,62% | 77,16% | Đồng hướng mẫu gộp, không ổn định theo tầng |
+| R05 | Ban ngày + Junction + ngày thường | 4,59% | 24,66% | 17,35% | 1,395 | 22,48% | 74,59% | Đồng hướng, ổn định theo tầng |
+| R06 | Junction + ngày thường | 6,78% | 24,79% | 17,16% | 1,402 | 21,87% | 73,98% | Đồng hướng, ổn định theo tầng |
+| R07 | Trưa-chiều + nhiệt độ vừa + nhiều mây | 4,94% | 23,04% | 17,40% | 1,303 | 21,42% | 73,63% | Đồng hướng, ổn định theo tầng |
+| R08 | Ngày thường + nhiệt độ vừa + nhiều mây | 12,09% | 24,81% | 16,70% | 1,403 | 22,38% | 78,13% | Đồng hướng mẫu gộp, không ổn định theo tầng |
+| R09 | Cuối tuần + nhiệt độ vừa | 7,09% | 25,49% | 17,09% | 1,441 | 19,94% | 65,05% | Đồng hướng, ổn định theo tầng |
 | R10 | Ban ngày + Junction | 5,91% | 24,74% | 17,24% | 1,399 | 21,43% | 72,22% | Đồng hướng, ổn định theo tầng |
 
-Không dùng từ “xác nhận”: rule và model không phải hai nguồn bằng chứng độc lập. “Đồng hướng” chỉ có nghĩa nhóm thỏa rule có cả tỷ lệ quan sát và score model cao hơn nhóm còn lại.
+Trong mười luật, tám luật đồng hướng ở mẫu gộp và trong mọi tầng Source/State đủ ít nhất 100 sự cố ở cả nhóm luật lẫn nhóm đối chứng. R04 và R08 chỉ đồng hướng trên mẫu gộp. Kết quả này trực tiếp trả lời Q3: model hỗ trợ đánh giá ở cấp từng sự cố, luật cung cấp cấu trúc điều kiện dễ đọc, còn kiểm tra phân tầng chỉ ra nơi kết luận tổng hợp không bền.
 
-## 3.6. Kiểm tra thiên lệch và độ bền theo tầng
+## 3.2. Mỗi kỹ thuật bổ sung / xác nhận / mâu thuẫn với kỹ thuật khác ra sao
 
-Tỷ lệ `Severity` 3-4 khác rất mạnh theo nguồn: Source1 = 4,36%, Source2 = 35,36%, Source3 = 35,28%. Tỷ lệ tại CA là 16,36% và TX là 21,64%; tỷ lệ cũng giảm mạnh theo năm trong snapshot. Đây có thể phản ánh khác biệt hệ thống thu thập, phạm vi bao phủ hoặc phân bố thời gian, nên kết quả mẫu gộp có nguy cơ gây hiểu lầm.
+### 3.2.1. Luật kết hợp bổ sung cho mô hình phân lớp
 
-Với mỗi rule, nhóm kiểm tra các tầng Source/State có ít nhất 100 mẫu ở cả nhóm rule và nhóm đối chứng. Tám rule giữ chênh lệch dương ở mọi tầng đủ mẫu. R04 và R08 đảo chiều quan sát trong Source2:
+Mô hình tạo score cho từng sự cố nhưng bản thân score không cho người dùng biết một tổ hợp ngắn nào đang được xem xét. Luật bổ sung antecedent, coverage và lift, nhờ đó chuyển một phần kết quả dự báo thành nhóm điều kiện có thể kiểm tra. Chẳng hạn, R01 cho biết nhóm `Junction + nhiệt độ vừa` có 662 sự cố test và tỷ lệ Severity 3-4 cao hơn nhóm đối chứng 8,50 điểm phần trăm.
 
-- R04: 32,12% trong nhóm rule so với 35,68% ở nhóm còn lại của Source2.
-- R08: 34,93% trong nhóm rule so với 35,49% ở nhóm còn lại của Source2.
+Luật còn giúp chia nhỏ lỗi mô hình. Recall thay đổi từ 62,00% ở R03 đến 73,98% ở R06, trong khi recall toàn test là 67,52%. Vì vậy luật cung cấp đầu vào cụ thể cho bước phân tích false negative và kỹ thuật nâng cao, thay vì chỉ kết luận model “tốt” hoặc “kém” từ một metric trung bình.
 
-Do đó R04 và R08 không đủ điều kiện làm phát hiện chính dù lift mẫu gộp đều khoảng 1,40. Đây là ví dụ trực tiếp cho thấy kỹ thuật thứ hai và kiểm tra phân tầng không chỉ đặt cạnh luật mà còn làm giảm mức độ khẳng định của kết quả.
+### 3.2.2. Mô hình phân lớp xác nhận theo nghĩa đồng hướng và bổ sung cho luật
 
-## 3.7. Kết luận liên kỹ thuật ở giai đoạn hiện tại
+Trong khung báo cáo, từ “xác nhận” được hiểu thận trọng là **bằng chứng đồng hướng**, không phải kiểm chứng độc lập. Rule và model cùng học từ một snapshot và chia sẻ nhiều đặc trưng, nên không thể xem model là một nguồn dữ liệu độc lập xác nhận quan hệ nhân quả.
 
-Hai kỹ thuật bổ sung nhau theo ba hướng:
+Với tám luật ổn định, nhóm thỏa antecedent có cả tỷ lệ Severity 3-4 quan sát và `risk_severe` trung bình cao hơn nhóm không thỏa trong mọi tầng Source/State đủ mẫu. Model vì vậy bổ sung hai thông tin mà luật không có:
 
-1. Luật cung cấp tổ hợp ngắn và độ phủ; mô hình cung cấp score cùng lỗi ở cấp từng `ID`.
-2. Tám luật có bằng chứng đồng hướng trên test và nhất quán trong các tầng Source/State đủ mẫu, tạo ứng viên cho evidence card.
-3. R04/R08 cho thấy kết quả gộp có thể che đảo chiều theo nguồn; chúng được giữ làm bằng chứng về giới hạn, không dùng làm khuyến nghị.
+- score liên tục ở cấp từng `ID`, thay vì chỉ cho biết có/không thỏa antecedent;
+- recall và false negative trong nhóm luật, cho biết một pattern có tỷ lệ cao nhưng model nhận diện được đến đâu.
 
-Phần này chưa chứng minh nguyên nhân và chưa cho phép khuyến nghị chính sách. Bước tiếp theo phải dùng 919 false negatives và 4.444 false positives làm bằng chứng cho hạn chế, thử Balanced Random Forest trên cùng split/feature/AP CV, rồi mới chốt 3-5 phát hiện cùng khuyến nghị có điều kiện.
+Mức đồng hướng này làm bằng chứng mạnh hơn việc chỉ báo confidence/lift trên train, nhưng vẫn chỉ là quan hệ quan sát.
+
+### 3.2.3. Kiểm tra phân tầng phát hiện mâu thuẫn với kết quả mẫu gộp
+
+Tỷ lệ Severity 3-4 khác mạnh theo nguồn: Source1 là 4,36%, Source2 là 35,36% và Source3 là 35,28%. Vì vậy một luật có thể đạt lift cao do thành phần nguồn khác nhau giữa nhóm luật và nhóm đối chứng.
+
+Hai mâu thuẫn quan trọng là:
+
+- R04: trong Source2, nhóm thỏa luật có tỷ lệ 32,12%, thấp hơn 35,68% của nhóm không thỏa.
+- R08: trong Source2, nhóm thỏa luật có tỷ lệ 34,93%, thấp hơn 35,49% của nhóm không thỏa.
+
+Như vậy, kết quả phân tầng mâu thuẫn với hướng tăng của mẫu gộp. R04 và R08 không được dùng làm phát hiện hoặc khuyến nghị chính. Đây là đóng góp thực chất của tổng hợp liên kỹ thuật: một kết quả bổ sung không chỉ làm câu chuyện mạnh hơn mà còn có thể buộc nhóm giảm mức độ khẳng định.
+
+### 3.2.4. Kết luận tổng hợp
+
+Ba kỹ thuật tạo một chuỗi lập luận thống nhất:
+
+1. Luật kết hợp phát hiện và mô tả tổ hợp điều kiện.
+2. Mô hình định lượng score và lỗi ở cấp sự cố trong chính các nhóm luật.
+3. Bootstrap và phân tầng kiểm tra xem hướng kết quả có bền ngoài train và trước khác biệt Source/State hay không.
+
+Kết quả hiện tại cung cấp tám ứng viên phát hiện ổn định và hai ví dụ mâu thuẫn cần loại khỏi kết luận chính. Phần này chưa chứng minh nguyên nhân và chưa đủ để đưa ra khuyến nghị chính sách. Mục 4 phải tiếp tục từ hạn chế có bằng chứng là 919 false negative và 4.444 false positive, áp dụng Balanced Random Forest trên cùng split/feature/metric, rồi Mục 5 mới chốt 3-5 phát hiện cuối.
