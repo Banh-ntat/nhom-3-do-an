@@ -1,47 +1,99 @@
-# Đồ án Khai phá dữ liệu — Nhận diện và diễn giải các tổ hợp điều kiện liên quan đến mức độ nghiêm trọng của tai nạn giao thông (US Accidents)
+# Đồ án Khai phá dữ liệu - US Accidents
 
-## 1. Cấu trúc thư mục
+## Chủ đề
+
+Phân tích các tổ hợp điều kiện liên hệ với mức ảnh hưởng giao thông của sự cố tại California và Texas.
+
+`Severity` trong US Accidents biểu thị mức ảnh hưởng lên luồng giao thông, không phải số người bị thương hoặc tử vong. Snapshot phân tích có 80.000 dòng và chỉ gồm California/Texas, nên kết luận không đại diện cho toàn nước Mỹ.
+
+## Câu hỏi dẫn dắt
+
+1. Tổ hợp điều kiện nào liên hệ với tỷ lệ `Severity` 3-4 cao hơn, và xu hướng có ổn định theo nguồn/bang không?
+2. Có thể nhận diện nhóm `Severity` 3-4 từ thông tin ban đầu đến mức nào, và mô hình thường bỏ sót/cảnh báo nhầm ở đâu?
+3. Luật và mô hình đồng hướng, bổ sung hoặc cảnh báo giới hạn của nhau ở những nhóm nào?
+
+## Cấu trúc
 
 ```text
-ten-nhom-do-an/
-|-- README.md                       # File này: cách chạy lại, môi trường
-|-- requirements.txt                # Danh sách thư viện và phiên bản (bao gồm imbalanced-learn)
-|-- data/                           # Dẫn tới bộ dữ liệu đã dùng ở bài tập (hoặc script tải)
-|   `-- accidents_preprocessed.csv  # Nguồn duy nhất cho notebook tổng hợp (có cột ID)
-|-- artifacts/                      # Sản phẩm trung gian tái lập được (split, rules, predictions...)
-|-- docs/                           # data_contract, nhật ký quyết định, phiếu đề xuất
-|-- phan-tich-tong-hop.ipynb        # Notebook tổng hợp liên kỹ thuật + toàn bộ hình/bảng cho báo cáo
-`-- report/
-    `-- bao-cao.pdf                 # Báo cáo cuối, đúng khung Phụ lục A của đề
+nhom-3-do-an/
+|-- README.md
+|-- requirements.txt
+|-- data/
+|   |-- README.md
+|   `-- accidents_preprocessed.csv   # Không commit lên Git
+|-- do_an/
+|   `-- analysis_core.py
+|-- artifacts/                       # Split, metrics, rules, predictions, figures
+|-- docs/
+|   |-- muc_3_tong_hop_lien_ky_thuat.md
+|   `-- nhat_ky_quyet_dinh.md
+`-- phan-tich-tong-hop.ipynb
 ```
 
-## 2. Môi trường chạy lại
+## Môi trường
 
-- Python phiên bản: `……` (ghi rõ theo `artifacts/environment.lock.txt`)
-- Cài đặt thư viện:
+Đã kiểm tra với Python 3.9.13. Cài dependency:
 
-```bash
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-- Thư viện bắt buộc có trong `requirements.txt`: `pandas`, `numpy`, `scikit-learn`, `mlxtend` (hoặc thư viện luật kết hợp đang dùng), `imbalanced-learn` (cho Balanced Random Forest), `matplotlib`/`seaborn`.
+Phiên bản thực tế nằm tại `artifacts/environment.lock.txt`.
 
-## 3. Cách chạy lại notebook tổng hợp
+## Dữ liệu
 
-1. Đặt `accidents_preprocessed.csv` vào thư mục `data/` (đường dẫn tương đối, không dùng đường dẫn tuyệt đối cá nhân).
-2. Khởi động kernel sạch (Restart Kernel).
-3. Chạy `Run All` trên `phan-tich-tong-hop.ipynb` từ đầu đến cuối, không cần thao tác thủ công giữa các cell.
-4. Notebook sẽ tự tạo lại theo đúng thứ tự: data contract → split chung theo `ID` → tái tạo phân lớp → tái tạo luật kết hợp → kiểm tra rule trên test → phân tích lỗi/độ bền → Balanced Random Forest → toàn bộ bảng/hình dùng trong `report/bao-cao.pdf`.
-5. Mọi bảng/hình xuất hiện trong báo cáo phải khớp với output sinh ra từ lần chạy này (không dùng số liệu chỉnh tay).
+Đặt snapshot đã tiền xử lý từ Bài 1 tại:
 
-## 4. Seed và khả năng tái lập
+```text
+data/accidents_preprocessed.csv
+```
 
-- `random_state = 42` cho toàn bộ train/test split (`StratifiedShuffleSplit`) và các bước có yếu tố ngẫu nhiên (tuning, bootstrap).
-- Không fit bất kỳ bước biến đổi nào (impute, scale, discretize, mô hình, frequent-itemsets) trên tập test.
-- Mọi liên kết giữa các bảng dùng khóa `ID`, không ghép theo vị trí dòng.
+File cần có 80.000 `ID` duy nhất, `Severity` thuộc 1-4 và các trường được mô tả trong `artifacts/data_contract_us_accidents.md`. Dữ liệu CSV được loại khỏi Git; không sử dụng đường dẫn tuyệt đối cá nhân.
 
-## 5. Ghi chú liêm chính học thuật
+## Chạy lại
 
-- Khai báo sử dụng công cụ AI: xem Phụ lục B trong `report/bao-cao.pdf`.
-- Nhật ký quyết định: xem `docs/nhat_ky_quyet_dinh.md`.
-- Tài liệu tham khảo trích dẫn theo chuẩn IEEE trong báo cáo.
+Trong thư mục gốc repository:
+
+```powershell
+python -m nbconvert --to notebook --execute .\phan-tich-tong-hop.ipynb `
+  --output phan-tich-tong-hop.ipynb --ExecutePreprocessor.timeout=1200
+```
+
+Hoặc mở notebook, chọn kernel của môi trường trên rồi dùng **Restart Kernel & Run All**.
+
+Notebook thực hiện:
+
+1. Kiểm tra data contract, phạm vi và thiên lệch nguồn.
+2. Tạo split 80/20 chung theo `ID`, stratify `Severity`, seed 42.
+3. Chạy baseline nhị phân chính và nền phân lớp bốn mức.
+4. Khai phá luật hoàn toàn trên train.
+5. Kiểm định luật trên test, nối dự báo theo `ID` và kiểm tra Source/State/năm.
+6. Xuất toàn bộ artifact cho phần tổng hợp liên kỹ thuật.
+
+Imputation, scaling, calibration, lựa chọn mô hình và khai phá luật chỉ fit trên train. `Distance(mi)` bị loại khỏi mô hình nhận diện sớm; 7.236 dòng thiếu thời gian được giữ là `Unknown`.
+
+## Tiến độ
+
+Đã hoàn thành D.2-D.6:
+
+- Split chung và audit dữ liệu.
+- Baseline nhị phân/bốn lớp không leakage.
+- Luật train và kiểm định test.
+- Bảng rules-model và kiểm tra độ bền theo tầng.
+- Tám luật đồng hướng, ổn định ở các tầng chính; R04/R08 chỉ đồng hướng trên mẫu gộp.
+
+Bước tiếp theo là D.7: áp dụng Balanced Random Forest theo cùng split, feature và average precision CV; sau đó mới chốt 3-5 evidence cards và khuyến nghị cuối.
+
+## Kết quả baseline chính
+
+Decision Tree nhị phân đạt average precision 0,3668, precision nhóm 3-4 là 0,3006 và recall 0,6752. Trên 16.000 dòng test, mô hình bỏ sót 919/2.829 mẫu nhóm 3-4 và tạo 4.444 cảnh báo nhầm. Vì vậy model chỉ là tín hiệu phân tích, chưa phù hợp tự động ra quyết định.
+
+## Tài liệu
+
+- `artifacts/data_contract_us_accidents.md`: hợp đồng dữ liệu và quy tắc đánh giá.
+- `docs/muc_3_tong_hop_lien_ky_thuat.md`: nội dung kỹ thuật cho Mục 3 báo cáo.
+- `docs/nhat_ky_quyet_dinh.md`: quyết định, bằng chứng và phương án không chọn.
+
+Mọi kết quả là liên hệ quan sát trong snapshot CA/TX, không chứng minh quan hệ nhân quả hoặc thương vong.
