@@ -1,0 +1,8 @@
+python==3.9.13
+pandas==2.2.3
+numpy==2.0.2
+scikit-learn==1.6.1
+matplotlib==3.9.4
+seaborn==0.13.2
+mlxtend==0.23.4
+imbalanced-learn==0.12.4
