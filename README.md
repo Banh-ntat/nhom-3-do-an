@@ -82,9 +82,16 @@ Imputation, scaling, calibration, lựa chọn mô hình và khai phá luật ch
 - Baseline nhị phân/bốn lớp không leakage.
 - Luật train và kiểm định test.
 - Bảng rules-model và kiểm tra độ bền theo tầng.
+- Chẩn đoán bỏ sót và cảnh báo nhầm trong từng nhóm luật.
 - Tám luật đồng hướng, ổn định ở các tầng chính; R04/R08 chỉ đồng hướng trên mẫu gộp.
 
-Bước tiếp theo là D.7: áp dụng Balanced Random Forest theo cùng split, feature và average precision CV; sau đó mới chốt 3-5 evidence cards và khuyến nghị cuối.
+Mức độ trả lời câu hỏi sau D.6:
+
+- Q1 đã có câu trả lời kỹ thuật từ 8 luật ổn định; Mục 5 chỉ chọn và diễn giải các phát hiện cuối.
+- Q2 đã có câu trả lời baseline và lát cắt lỗi theo rule; D.7 phải phân tích false negative sâu hơn và kiểm tra Balanced Random Forest trước khi chốt mô hình cuối.
+- Q3 đã được trả lời với baseline bằng 8 trường hợp đồng hướng và 2 trường hợp không bền theo nguồn; phải chạy lại bảng đối chiếu nếu D.7 thay mô hình chính.
+
+Bước tiếp theo là D.7: áp dụng Balanced Random Forest theo cùng split, feature và average precision CV; sau đó chốt 3-5 evidence cards và khuyến nghị cuối.
 
 ## Kết quả baseline chính
 

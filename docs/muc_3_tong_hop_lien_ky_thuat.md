@@ -2,6 +2,18 @@
 
 > Bản nội dung kỹ thuật để đưa vào báo cáo. Các số liệu được sinh từ `phan-tich-tong-hop.ipynb`; không thay đổi số liệu bằng cách nhập tay.
 
+### Phạm vi trả lời của Mục 3
+
+Mục 3 không phải phần liệt kê lại kết quả của hai bài tập. Phần này dùng cùng các sự cố test để trả lời ba câu hỏi dẫn dắt bằng cách đối chiếu luật, dự báo và kiểm tra độ bền. Trạng thái trả lời sau bước D.6 được hiểu như sau:
+
+| Câu hỏi | Mục 3 đã trả lời được gì? | Phần tiếp theo phải làm gì? |
+|---|---|---|
+| Q1 | **Đã có câu trả lời kỹ thuật:** xác định được 8/10 luật ứng viên có tỷ lệ Severity 3-4 cao hơn nhóm đối chứng và đồng hướng trong các tầng Source/State đủ mẫu. | Mục 5 chọn 3-5 phát hiện có ý nghĩa thực tế từ các luật ổn định; không thay đổi số liệu Q1. |
+| Q2 | **Đã trả lời baseline:** định lượng được khả năng nhận diện, tổng số bỏ sót/cảnh báo nhầm và lỗi trong từng nhóm luật. | Mục 4 phân tích sâu false negative và thử Balanced Random Forest; nếu chọn mô hình mới thì cập nhật câu trả lời cuối về khả năng nhận diện. |
+| Q3 | **Đã có câu trả lời với baseline:** 8 luật đồng hướng và ổn định; R04/R08 đồng hướng ở mẫu gộp nhưng mâu thuẫn trong Source2. | Nếu Mục 4 thay mô hình chính, chạy lại cùng bảng đối chiếu để xác nhận quan hệ còn giữ nguyên. |
+
+Do đó, Mục 3 đủ để bàn giao sang bước D.7. Không cần chờ phần sau mới biết câu trả lời của Q1 và Q3; chỉ Q2 chưa phải kết luận mô hình cuối.
+
 ## 3.1. Kết hợp các kỹ thuật quanh câu hỏi dẫn dắt
 
 Đồ án kết hợp **luật kết hợp**, **mô hình phân lớp** và **thống kê kiểm định độ bền** trên cùng một tập gồm 16.000 sự cố test. Mỗi dòng được nối bằng `ID`; do đó kết quả các kỹ thuật cùng mô tả đúng một nhóm sự cố, thay vì chỉ được đặt cạnh nhau.
@@ -38,7 +50,9 @@ Ba ví dụ có bằng chứng tương đối mạnh là:
 
 Ví dụ R01 bao phủ 662 sự cố test, trong đó 171 sự cố thuộc Severity 3-4. Tỷ lệ 25,83% cao hơn 8,50 điểm phần trăm so với nhóm không thỏa R01; CI bootstrap 95% của chênh lệch là 5,33-11,72 điểm phần trăm. Score mô hình cũng cao hơn nhóm đối chứng 5,66 điểm phần trăm, với CI 95% là 4,74-6,46 điểm phần trăm. Vì vậy R01 có bằng chứng đồng hướng từ luật, model và kiểm tra thống kê trong phạm vi test.
 
-Tuy nhiên, Q1 không được trả lời chỉ bằng kết quả mẫu gộp. R04 và R08 có lift test xấp xỉ 1,40 nhưng đảo chiều quan sát trong Source2. Hai luật này bị loại khỏi nhóm phát hiện chính. Kết luận Q1 ở giai đoạn hiện tại là: có tám luật ứng viên đồng hướng và ổn định trong các tầng chính đủ mẫu; chưa có căn cứ nói các điều kiện đó gây ra Severity cao.
+Tuy nhiên, Q1 không được trả lời chỉ bằng kết quả mẫu gộp. R04 và R08 có lift test xấp xỉ 1,40 nhưng đảo chiều quan sát trong Source2. Hai luật này bị loại khỏi nhóm phát hiện chính.
+
+**Câu trả lời hiện tại cho Q1:** trong snapshot CA/TX, các tổ hợp như `Junction + nhiệt độ vừa`, `ban ngày + cuối tuần + nhiệt độ vừa` và `cuối tuần + nhiệt độ vừa` liên hệ với tỷ lệ Severity 3-4 cao hơn nhóm không thỏa điều kiện. Tổng cộng 8/10 luật ứng viên giữ cùng chiều trong các tầng Source/State đủ mẫu. Đây là các liên hệ quan sát dùng để ưu tiên điều tra và giám sát, không phải bằng chứng rằng các điều kiện trên gây ra Severity cao.
 
 ### 3.1.3. Kết hợp kỹ thuật để trả lời Q2
 
@@ -54,7 +68,17 @@ Mô hình chính dự báo trực tiếp `is_severe`, cùng biến đích với 
 
 Decision Tree nhận diện đúng 1.910/2.829 sự cố Severity 3-4, bỏ sót 919 và tạo 4.444 cảnh báo nhầm. Recall 67,52% đi kèm precision chỉ 30,06%, nên model có thể tạo tín hiệu phân tích nhưng chưa đủ chất lượng để tự động ra quyết định.
 
-Luật kết hợp bổ sung góc nhìn về lỗi theo nhóm. Recall của model trong R03 là 62,00% và trong R09 là 65,05%, thấp hơn recall toàn test; trong khi recall trong R06 (`Junction + ngày thường`) là 73,98%. Chênh lệch này cho biết lỗi không phân bố hoàn toàn đồng đều theo các tổ hợp có thể diễn giải. Tuy nhiên, chưa nhóm nào đủ bằng chứng để gọi là “điểm mù chắc chắn”; kết luận cuối phải chờ phân tích false negative và Balanced Random Forest ở Mục 4.
+Để trả lời vế “bỏ sót hoặc cảnh báo nhầm trong nhóm nào”, mỗi antecedent được dùng như một lát cắt lỗi. `FPR` là tỷ lệ sự cố Severity 1-2 bị model cảnh báo nhầm thành 3-4 trong nhóm đang xét. Các nhóm luật có thể chồng lấp, vì vậy không được cộng số lỗi giữa các dòng.
+
+| Phạm vi | Recall 3-4 | Bỏ sót 3-4 | Precision 3-4 | FPR | Ý nghĩa đối với Q2 |
+|---|---:|---:|---:|---:|---|
+| Toàn bộ test | 67,52% | 919 | 30,06% | 33,74% | Mốc so sánh chung |
+| R03: Ban ngày + cuối tuần + nhiệt độ vừa | 62,00% | 76 | 39,24% | 34,59% | Recall thấp hơn mốc chung; cần ưu tiên phân tích nguyên nhân bỏ sót |
+| R09: Cuối tuần + nhiệt độ vừa | 65,05% | 101 | 40,09% | 33,25% | Có 101 ca severe bị bỏ sót trong nhóm; recall vẫn thấp hơn mốc chung |
+| R05: Ban ngày + Junction + ngày thường | 74,59% | 46 | 31,18% | 53,89% | Recall cao hơn nhưng đổi lại tỷ lệ cảnh báo nhầm rất cao |
+| R08: Ngày thường + nhiệt độ vừa + nhiều mây | 78,13% | 105 | 32,44% | 53,68% | Bắt được nhiều severe hơn nhưng cảnh báo nhầm cao; luật còn không bền trong Source2 |
+
+**Câu trả lời hiện tại cho Q2:** baseline nhận diện được khoảng hai phần ba số sự cố Severity 3-4, nhưng chỉ khoảng ba trên mười cảnh báo severe là đúng. R03 và R09 là hai lát cắt cần ưu tiên khi phân tích bỏ sót; R05 và R08 minh họa đánh đổi khi recall cao đi kèm nhiều cảnh báo nhầm. Chưa được gọi các nhóm này là “điểm mù chắc chắn”, vì chúng chồng lấp và chưa kiểm soát đồng thời các yếu tố khác. Mục 4 phải kiểm tra sâu false negative và Balanced Random Forest trước khi chốt mô hình cuối.
 
 ### 3.1.4. Kết hợp kỹ thuật để trả lời Q3
 
@@ -75,7 +99,9 @@ Với mỗi antecedent, nhóm nối các `ID` test tương ứng với dự báo
 | R09 | Cuối tuần + nhiệt độ vừa | 7,09% | 25,49% | 17,09% | 1,441 | 19,94% | 65,05% | Đồng hướng, ổn định theo tầng |
 | R10 | Ban ngày + Junction | 5,91% | 24,74% | 17,24% | 1,399 | 21,43% | 72,22% | Đồng hướng, ổn định theo tầng |
 
-Trong mười luật, tám luật đồng hướng ở mẫu gộp và trong mọi tầng Source/State đủ ít nhất 100 sự cố ở cả nhóm luật lẫn nhóm đối chứng. R04 và R08 chỉ đồng hướng trên mẫu gộp. Kết quả này trực tiếp trả lời Q3: model hỗ trợ đánh giá ở cấp từng sự cố, luật cung cấp cấu trúc điều kiện dễ đọc, còn kiểm tra phân tầng chỉ ra nơi kết luận tổng hợp không bền.
+Trong mười luật, tám luật đồng hướng ở mẫu gộp và trong mọi tầng Source/State đủ ít nhất 100 sự cố ở cả nhóm luật lẫn nhóm đối chứng. R04 và R08 chỉ đồng hướng trên mẫu gộp.
+
+**Câu trả lời hiện tại cho Q3:** luật bổ sung cho model bằng cách nêu rõ tổ hợp và độ phủ; model cho bằng chứng đồng hướng khi score severe trung bình tăng trong nhóm luật; kiểm tra phân tầng phát hiện mâu thuẫn ở R04/R08 mà kết quả mẫu gộp che khuất. Vì rule và model cùng học từ một snapshot, “đồng hướng” không được gọi là xác nhận độc lập hay bằng chứng nhân quả.
 
 ## 3.2. Mỗi kỹ thuật bổ sung / xác nhận / mâu thuẫn với kỹ thuật khác ra sao
 
@@ -115,4 +141,6 @@ Ba kỹ thuật tạo một chuỗi lập luận thống nhất:
 2. Mô hình định lượng score và lỗi ở cấp sự cố trong chính các nhóm luật.
 3. Bootstrap và phân tầng kiểm tra xem hướng kết quả có bền ngoài train và trước khác biệt Source/State hay không.
 
-Kết quả hiện tại cung cấp tám ứng viên phát hiện ổn định và hai ví dụ mâu thuẫn cần loại khỏi kết luận chính. Phần này chưa chứng minh nguyên nhân và chưa đủ để đưa ra khuyến nghị chính sách. Mục 4 phải tiếp tục từ hạn chế có bằng chứng là 919 false negative và 4.444 false positive, áp dụng Balanced Random Forest trên cùng split/feature/metric, rồi Mục 5 mới chốt 3-5 phát hiện cuối.
+Kết quả hiện tại cung cấp tám ứng viên phát hiện ổn định và hai ví dụ mâu thuẫn cần loại khỏi kết luận chính. Như vậy, phần D.2-D.6 và Mục 3 đã hoàn tất đầu ra cần thiết để trả lời Q1, trả lời Q3 với baseline và tạo câu trả lời baseline có bằng chứng cho Q2.
+
+Phần tiếp theo không làm lại Mục 3. Mục 4 nhận đầu vào là 919 false negative, 4.444 false positive và bảng lỗi theo rule để kiểm tra Balanced Random Forest trên cùng split/feature/metric. Nếu mô hình mới được chọn, chỉ cần tái tạo các cột score/lỗi và cập nhật bảng đối chiếu; luật, split và quy trình kiểm tra độ bền được giữ nguyên. Mục 5 sau đó chọn 3-5 phát hiện cuối và viết khuyến nghị. Toàn bộ chuỗi vẫn chỉ phản ánh liên hệ quan sát, chưa chứng minh nguyên nhân hay đủ căn cứ ban hành chính sách.
