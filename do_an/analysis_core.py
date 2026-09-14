@@ -857,6 +857,44 @@ def integrate_rules_and_model(
         model_risk = float(group["risk_severe"].mean())
         comparison_model_risk = float(comparison["risk_severe"].mean())
         predicted_severe_rate = float(group["is_pred_severe"].mean())
+        true_positive_count = int(
+            ((group["is_severe"] == 1) & (group["is_pred_severe"] == 1)).sum()
+        )
+        false_positive_count = int(group["is_false_positive_severe"].sum())
+        predicted_positive_count = true_positive_count + false_positive_count
+        negative_count = int((group["is_severe"] == 0).sum())
+        precision_in_rule = (
+            true_positive_count / predicted_positive_count
+            if predicted_positive_count
+            else np.nan
+        )
+        false_positive_rate_in_rule = (
+            false_positive_count / negative_count if negative_count else np.nan
+        )
+
+        comparison_true_positive = int(
+            (
+                (comparison["is_severe"] == 1)
+                & (comparison["is_pred_severe"] == 1)
+            ).sum()
+        )
+        comparison_false_positive = int(
+            comparison["is_false_positive_severe"].sum()
+        )
+        comparison_predicted_positive = (
+            comparison_true_positive + comparison_false_positive
+        )
+        comparison_negative_count = int((comparison["is_severe"] == 0).sum())
+        comparison_precision = (
+            comparison_true_positive / comparison_predicted_positive
+            if comparison_predicted_positive
+            else np.nan
+        )
+        comparison_false_positive_rate = (
+            comparison_false_positive / comparison_negative_count
+            if comparison_negative_count
+            else np.nan
+        )
         recall_in_rule = (
             float(group.loc[group["is_severe"] == 1, "is_pred_severe"].mean())
             if severe_count
@@ -919,8 +957,17 @@ def integrate_rules_and_model(
                 "model_risk_difference_ci95_low": model_diff_low,
                 "model_risk_difference_ci95_high": model_diff_high,
                 "predicted_severe_rate": predicted_severe_rate,
+                "n_predicted_severe_in_rule": predicted_positive_count,
+                "true_positive_severe_in_rule": true_positive_count,
+                "false_positive_severe_in_rule": false_positive_count,
+                "precision_severe_in_rule": precision_in_rule,
+                "false_positive_rate_in_rule": false_positive_rate_in_rule,
+                "precision_severe_comparison": comparison_precision,
+                "false_positive_rate_comparison": comparison_false_positive_rate,
                 "recall_severe_in_rule": recall_in_rule,
-                "false_negative_severe_in_rule": int(group["is_false_negative_severe"].sum()),
+                "false_negative_severe_in_rule": int(
+                    group["is_false_negative_severe"].sum()
+                ),
                 "n_eligible_main_strata": n_eligible_strata,
                 "n_positive_main_strata": n_positive_strata,
                 "n_model_positive_main_strata": n_model_positive_strata,
