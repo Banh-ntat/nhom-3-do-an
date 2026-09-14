@@ -23,6 +23,14 @@ Tên `is_severe` và `MucDo_Nang` được giữ để tương thích với mã 
 
 Phân bố snapshot: Severity 1 = 520; Severity 2 = 65.334; Severity 3 = 13.439; Severity 4 = 707. Nhóm Severity 3-4 chiếm 17,68%.
 
+### Câu hỏi dẫn dắt đã khóa
+
+1. **Q1:** Trong các sự cố được ghi nhận tại California và Texas, những tổ hợp điều kiện thời gian, thời tiết, ánh sáng và hạ tầng nào liên hệ với tỷ lệ `Severity 3-4` cao hơn, và xu hướng đó có ổn định theo nguồn dữ liệu và bang không?
+2. **Q2:** Có thể nhận diện ngay tại thời điểm ghi nhận ban đầu các sự cố có khả năng thuộc nhóm `Severity 3-4` đến mức nào, và mô hình thường bỏ sót hoặc cảnh báo nhầm trong những nhóm điều kiện nào?
+3. **Q3:** Các luật điều kiện bổ sung, cho bằng chứng đồng hướng hoặc mâu thuẫn với đánh giá của mô hình phân lớp như thế nào?
+
+Các câu hỏi này là chuỗi văn bản chuẩn dùng trong README, notebook, Phiếu đề xuất và báo cáo. Chỉ thay đổi khi nhóm lập một quyết định mới và cập nhật đồng thời mọi tài liệu liên quan.
+
 ## 3. Đặc trưng phân lớp được phép dùng
 
 ```text

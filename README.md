@@ -8,9 +8,9 @@ Phân tích các tổ hợp điều kiện liên hệ với mức ảnh hưởng
 
 ## Câu hỏi dẫn dắt
 
-1. Tổ hợp điều kiện nào liên hệ với tỷ lệ `Severity` 3-4 cao hơn, và xu hướng có ổn định theo nguồn/bang không?
-2. Có thể nhận diện nhóm `Severity` 3-4 từ thông tin ban đầu đến mức nào, và mô hình thường bỏ sót/cảnh báo nhầm ở đâu?
-3. Luật và mô hình đồng hướng, bổ sung hoặc cảnh báo giới hạn của nhau ở những nhóm nào?
+1. Trong các sự cố được ghi nhận tại California và Texas, những tổ hợp điều kiện thời gian, thời tiết, ánh sáng và hạ tầng nào liên hệ với tỷ lệ `Severity 3-4` cao hơn, và xu hướng đó có ổn định theo nguồn dữ liệu và bang không?
+2. Có thể nhận diện ngay tại thời điểm ghi nhận ban đầu các sự cố có khả năng thuộc nhóm `Severity 3-4` đến mức nào, và mô hình thường bỏ sót hoặc cảnh báo nhầm trong những nhóm điều kiện nào?
+3. Các luật điều kiện bổ sung, cho bằng chứng đồng hướng hoặc mâu thuẫn với đánh giá của mô hình phân lớp như thế nào?
 
 ## Cấu trúc
 

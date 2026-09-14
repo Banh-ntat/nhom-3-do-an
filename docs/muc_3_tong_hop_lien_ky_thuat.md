@@ -24,7 +24,7 @@ Ba lớp bằng chứng được kết hợp như sau:
 
 ### 3.1.2. Kết hợp kỹ thuật để trả lời Q1
 
-**Q1: Trong các sự cố được ghi nhận tại California và Texas, tổ hợp điều kiện nào liên hệ với tỷ lệ Severity 3-4 cao hơn, và xu hướng có nhất quán theo nguồn/bang không?**
+**Q1: Trong các sự cố được ghi nhận tại California và Texas, những tổ hợp điều kiện thời gian, thời tiết, ánh sáng và hạ tầng nào liên hệ với tỷ lệ `Severity 3-4` cao hơn, và xu hướng đó có ổn định theo nguồn dữ liệu và bang không?**
 
 Luật kết hợp được dùng để phát hiện tổ hợp trên train. Mười antecedent cuối được khóa trước khi xem test. Khi áp dụng lên test, nhóm không chỉ tính confidence/lift mà còn so tỷ lệ Severity 3-4 với nhóm **không thỏa** antecedent, tính bootstrap CI 95%, đối chiếu score mô hình và kiểm tra từng tầng Source/State đủ mẫu.
 
@@ -42,7 +42,7 @@ Tuy nhiên, Q1 không được trả lời chỉ bằng kết quả mẫu gộp.
 
 ### 3.1.3. Kết hợp kỹ thuật để trả lời Q2
 
-**Q2: Có thể nhận diện nhóm Severity 3-4 từ thông tin ban đầu đến mức nào, và mô hình thường bỏ sót hoặc cảnh báo nhầm ở đâu?**
+**Q2: Có thể nhận diện ngay tại thời điểm ghi nhận ban đầu các sự cố có khả năng thuộc nhóm `Severity 3-4` đến mức nào, và mô hình thường bỏ sót hoặc cảnh báo nhầm trong những nhóm điều kiện nào?**
 
 Mô hình chính dự báo trực tiếp `is_severe`, cùng biến đích với consequent `MucDo_Nang` của luật. Decision Tree cân bằng được chọn bằng average precision qua 5-fold stratified CV trên train; test không tham gia lựa chọn.
 
@@ -58,7 +58,7 @@ Luật kết hợp bổ sung góc nhìn về lỗi theo nhóm. Recall của mode
 
 ### 3.1.4. Kết hợp kỹ thuật để trả lời Q3
 
-**Q3: Luật và mô hình đồng hướng, bổ sung hoặc cảnh báo giới hạn của nhau ở những nhóm nào?**
+**Q3: Các luật điều kiện bổ sung, cho bằng chứng đồng hướng hoặc mâu thuẫn với đánh giá của mô hình phân lớp như thế nào?**
 
 Với mỗi antecedent, nhóm nối các `ID` test tương ứng với dự báo, rồi so cả tỷ lệ quan sát và score mô hình với nhóm không thỏa luật. Bảng sau là đầu ra trung tâm của phần tổng hợp:
 
