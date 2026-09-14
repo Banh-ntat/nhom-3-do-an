@@ -10,7 +10,7 @@
     "model__max_depth": 12,
     "model__min_samples_leaf": 100
   },
-  "binary_tree_best_cv_average_precision": 0.35351887051339725,
+  "binary_tree_best_cv_average_precision": 0.35350849982772947,
   "multiclass_selected_model": "Decision Tree balanced",
   "multiclass_selection_rule": "F1-macro CV cao nhất trên train",
   "multiclass_logistic_best_params": {
@@ -21,8 +21,8 @@
     "model__max_depth": 12,
     "model__min_samples_leaf": 20
   },
-  "multiclass_tree_best_cv_f1_macro": 0.25593230636913733,
+  "multiclass_tree_best_cv_f1_macro": 0.2558254881815808,
   "excluded_early_prediction_feature": "Distance(mi)",
   "probability_calibration": "CalibratedClassifierCV, sigmoid, cv=5 trên train; nhãn cứng lấy từ model nhị phân được chọn",
-  "brier_severe_test": 0.12898594457433132
+  "brier_severe_test": 0.12898741891706123
 }
